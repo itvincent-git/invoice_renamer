@@ -1,21 +1,32 @@
+# Invoice Renamer
+## Description
+A tool to rename invoice files.
+It will rename the invoice file to the invoice amount and the invoice date.
 
-# Install
-## install uv
+## Usage
+```sh
+uv run invoice_renamer.py test.pdf
+```
+
+## Install
+### Install uv
 ```sh
 pip install uv
 ```
 
-## install paddlepaddle for OCR
+### Install paddlepaddle for OCR
+macOS:
 ```sh
 uv pip install paddlepaddle==3.0.0rc1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 ```
+Detail to read: [PaddlePaddle/PaddleOCR)](https://github.com/PaddlePaddle/PaddleOCR)
 
-## install paddleocr
+### Install paddleocr
 ```sh
 uv add paddleocr
 ```
 
-## install ccache
+### Install ccache
 ```sh
 brew install ccache
 ```
