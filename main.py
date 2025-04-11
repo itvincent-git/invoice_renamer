@@ -42,7 +42,7 @@ def extract_date(text):
 def extract_amount(text):
     """提取金额"""
     # 匹配格式: (小写) 683.00 或类似格式
-    amount_pattern = r'（小写）￥(\d+\.\d{2})'
+    amount_pattern = r'（小写）￥?¥?(\d+\.\d{2})'
     match = re.search(amount_pattern, text)
     print(f"匹配到的金额: {match}")
     
@@ -101,13 +101,38 @@ def rename_invoice(pdf_path):
         print(traceback.format_exc())
         return False
 
+def process_directory(directory_path):
+    """递归处理目录及其子目录中的所有PDF文件"""
+    success_count = 0
+    failed_count = 0
+    
+    for root, dirs, files in os.walk(directory_path):
+        for filename in files:
+            if filename.lower().endswith('.pdf'):
+                pdf_path = os.path.join(root, filename)
+                print(f"\n---->处理文件: {pdf_path}")
+                print("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
+                
+                if rename_invoice(pdf_path):
+                    success_count += 1
+                else:
+                    failed_count += 1
+    
+    print("\n处理完成统计:")
+    print(f"成功处理: {success_count} 个文件")
+    print(f"处理失败: {failed_count} 个文件")
+    print(f"总计文件: {success_count + failed_count} 个")
+
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='发票PDF重命名工具')
-    parser.add_argument('pdf_path', help='发票PDF文件路径')
+    parser.add_argument('path', help='发票PDF文件路径或文件夹路径')
     args = parser.parse_args()
     
-    rename_invoice(args.pdf_path)
+    if os.path.isdir(args.path):
+        process_directory(args.path)
+    else:
+        rename_invoice(args.path)
 
 if __name__ == "__main__":
     main()

@@ -14,6 +14,12 @@ uv run invoice_renamer.py test.pdf
 pip install uv
 ```
 
+### Install dependencies
+```sh
+uv venv
+uv sync
+```
+
 ### Install paddlepaddle for OCR
 macOS:
 ```sh
