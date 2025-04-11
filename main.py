@@ -2,25 +2,33 @@ import os
 import re
 from paddleocr import PaddleOCR
 from pdf2image import convert_from_path
+from PIL import Image
 import argparse
 import traceback
 import numpy
 
-def extract_text_from_pdf(pdf_path):
-    """从PDF文件中提取文本内容"""
+def extract_text_from_file(file_path):
+    """从PDF或JPG文件中提取文本内容"""
     # 初始化PaddleOCR
     ocr = PaddleOCR(use_angle_cls=True, lang='ch', show_log=False)
     
-    # 将PDF转换为图像
-    images = convert_from_path(pdf_path)
-    
-    # 提取所有页面的文本
     text = ""
-    for image in images:
+    if file_path.lower().endswith('.pdf'):
+        # 将PDF转换为图像
+        images = convert_from_path(file_path)
+        for image in images:
+            result = ocr.ocr(numpy.array(image))
+            # 提取识别的文本
+            if result[0]:
+                for line in result[0]:
+                    text += line[1][0] + "\n"
+    else:  # 处理图片文件
+        image = Image.open(file_path)
         result = ocr.ocr(numpy.array(image))
         # 提取识别的文本
-        for line in result[0]:
-            text += line[1][0] + "\n"
+        if result[0]:
+            for line in result[0]:
+                text += line[1][0] + "\n"
     
     return text
 
@@ -60,11 +68,11 @@ def extract_amount(text):
     
     return None
 
-def rename_invoice(pdf_path):
+def rename_invoice(file_path):
     """根据提取的信息复制发票文件到rename目录"""
     try:
         # 提取文本
-        text = extract_text_from_pdf(pdf_path)
+        text = extract_text_from_file(file_path)
 
         print(f"提取的文本内容: {text}")
         # 打印一条长的分隔线
@@ -75,7 +83,7 @@ def rename_invoice(pdf_path):
         amount = extract_amount(text)
         
         if not date or not amount:
-            print(f"无法从文件 {pdf_path} 中提取必要信息。")
+            print(f"无法从文件 {file_path} 中提取必要信息。")
             if not date:
                 print("未能识别到开票日期。")
             if not amount:
@@ -83,37 +91,40 @@ def rename_invoice(pdf_path):
             return False
         
         # 创建rename目录（如果不存在）
-        rename_dir = os.path.join(os.path.dirname(pdf_path), 'rename')
+        rename_dir = os.path.join(os.path.dirname(file_path), 'rename')
         os.makedirs(rename_dir, exist_ok=True)
         
+        # 获取原文件扩展名
+        _, ext = os.path.splitext(file_path)
+        
         # 构建新文件名和路径
-        new_filename = f"{date}_{amount}元.pdf"
+        new_filename = f"{date}_{amount}元{ext}"
         new_filepath = os.path.join(rename_dir, new_filename)
         
         # 复制文件
         import shutil
-        shutil.copy2(pdf_path, new_filepath)
+        shutil.copy2(file_path, new_filepath)
         print(f"文件已复制到: {new_filepath}")
         return True
     
     except Exception as e:
-        print(f"处理文件 {pdf_path} 时出错: {e}")
+        print(f"处理文件 {file_path} 时出错: {e}")
         print(traceback.format_exc())
         return False
 
 def process_directory(directory_path):
-    """递归处理目录及其子目录中的所有PDF文件"""
+    """递归处理目录及其子目录中的所有PDF和JPG文件"""
     success_count = 0
     failed_count = 0
     
     for root, dirs, files in os.walk(directory_path):
         for filename in files:
-            if filename.lower().endswith('.pdf'):
-                pdf_path = os.path.join(root, filename)
-                print(f"\n---->处理文件: {pdf_path}")
+            if filename.lower().endswith(('.pdf', '.jpg', '.jpeg')):
+                file_path = os.path.join(root, filename)
+                print(f"\n---->处理文件: {file_path}")
                 print("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
                 
-                if rename_invoice(pdf_path):
+                if rename_invoice(file_path):
                     success_count += 1
                 else:
                     failed_count += 1
@@ -125,8 +136,8 @@ def process_directory(directory_path):
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='发票PDF重命名工具')
-    parser.add_argument('path', help='发票PDF文件路径或文件夹路径')
+    parser = argparse.ArgumentParser(description='发票PDF/JPG重命名工具')
+    parser.add_argument('path', help='发票文件路径或文件夹路径 (支持PDF和JPG格式)')
     args = parser.parse_args()
     
     if os.path.isdir(args.path):
