@@ -1,0 +1,12 @@
+[project]
+name = "invoice-renamer"
+version = "0.1.0"
+description = "A tool to rename invoices based on their content"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "argparse>=1.4.0",
+    "paddleocr>=2.10.0",
+    "pdf2image>=1.17.0",
+    "setuptools>=78.1.0",
+]
